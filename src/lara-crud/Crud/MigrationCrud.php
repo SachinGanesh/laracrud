@@ -48,6 +48,7 @@ class MigrationCrud implements Crud
         'datetime' => 'dateTime',
         'time' => 'time',
         'timestamp' => 'timestamp',
+        'json' => 'json',
     ];
 
     /**
@@ -130,6 +131,8 @@ class MigrationCrud implements Crud
                     $arr['methodName'] = 'increments';
                 } elseif ($dataType == 'bigint') {
                     $arr['methodName'] = 'bigIncrements';
+                } elseif ($dataType == 'char') {
+                    $arr['methodName'] = 'char';
                 }
             } else {
                 $arr['methodName'] = isset($this->columnMap[$dataType]) ? $this->columnMap[$dataType] : '';
@@ -138,14 +141,16 @@ class MigrationCrud implements Crud
             if ($dataType == 'enum') {
                 $retVals = join("', '", $column->options());
                 $params = '[\'' . $retVals . '\']';
-            } elseif ($dataType == 'varchar') {
+            } elseif ($dataType == 'varchar' || $dataType == 'char') {
                 $params = $column->length();
             } elseif ($dataType == 'tinyint') {
                 if ($column->length() == 1) {
                     $arr['methodName'] = 'boolean';
                 }
-            } elseif (in_array($dataType, ['smallint', 'int', 'mediumint', 'bigint', 'float',
-                'double'])) {
+            } elseif (in_array($dataType, [
+                'smallint', 'int', 'mediumint', 'bigint', 'float',
+                'double'
+            ])) {
                 if (!empty($column->length())) {
                     $params = false;
                 }
