@@ -223,6 +223,15 @@ class Model
         return $this->fillable;
     }
 
+    public function fillableInline()
+    {
+        $data = [];
+        foreach($this->fillable as $fillable){
+            $data []= str_replace("\t", "", str_replace("'","", $fillable));
+        }
+        return $data;
+    }
+
     /**
      * Date type column processing.
      *

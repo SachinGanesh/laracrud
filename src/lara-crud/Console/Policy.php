@@ -17,7 +17,7 @@ class Policy extends Command
     protected $signature = 'laracrud:policy
         {model  : Eloquent model name}
         {--c|controller= : Create policy for all of the public method of this controller. e.g. --controller=PostController}
-        {--name= : Custom Name of the Policy. e.g. --name=MyPostPolicy}';
+        {--name= : Custom Name of the Policy. e.g. --name=MyPostPolicy} {--permission= : Permission of the Policy}';
 
     /**
      * The console command description.
@@ -37,8 +37,9 @@ class Policy extends Command
             $model = $this->argument('model');
             $controller = $this->option('controller');
             $name = $this->option('name');
+            $permission = $this->option('permission');
 
-            $policyCrud = new \LaraCrud\Crud\Policy($this->getModel($model), $this->getController($controller), $name);
+            $policyCrud = new \LaraCrud\Crud\Policy($this->getModel($model), $this->getController($controller), $name, $permission);
             $policyCrud->save();
             $this->info('Policy class created successfully');
         } catch (\Exception $ex) {

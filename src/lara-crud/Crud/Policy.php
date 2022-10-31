@@ -72,6 +72,9 @@ class Policy implements Crud
 
     protected $modelRelationReader;
 
+    protected $permission;
+
+
     /**
      * Policy constructor.
      *
@@ -82,9 +85,10 @@ class Policy implements Crud
      *
      * @throws \Exception
      */
-    public function __construct(string $model, ?string $controller = null, ?string $name = null, array $only = [])
+    public function __construct(string $model, ?string $controller = null, ?string $name = null, string $permission = null, array $only = [])
     {
         $this->modelFullClass = $model;
+        $this->permission = $permission;
         $this->modelRelationReader = (new ModelRelationReader(new $this->modelFullClass()))->read();
         $this->shortModelName = $this->modelRelationReader->getShortName();
         $this->checkController($controller);
@@ -113,6 +117,7 @@ class Policy implements Crud
                 'method' => $method,
                 'modelClass' => $this->shortModelName,
                 'modelFullClass' => $this->modelFullClass,
+                'permission' => $this->permission,
                 'modelClassVar' => lcfirst($this->shortModelName),
                 'return' => $this->getReturnString(),
             ]))->get();

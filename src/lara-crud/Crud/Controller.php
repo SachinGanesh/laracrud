@@ -4,9 +4,11 @@ namespace LaraCrud\Crud;
 
 use Illuminate\Database\Eloquent\Model;
 use LaraCrud\Contracts\Crud;
+use LaraCrud\Contracts\TableContract;
 use LaraCrud\Helpers\Helper;
 use LaraCrud\Helpers\TemplateManager;
 use LaraCrud\Repositories\ControllerRepository;
+use LaraCrud\Builder\Model as ModelBuilder;
 
 class Controller implements Crud
 {
@@ -85,11 +87,54 @@ class Controller implements Crud
         bool $api = false
     ) {
         $this->model = $model;
+        $this->modelName2 = $this->getModelName($model->getTable());
+
+        
+        $this->table = app()->make(TableContract::class, ['table' => $model->getTable()]);
         $this->resolveControllerFileName($controllerFileName);
+        $this->modelBuilder = $this->makeModelBuilders();
 
         $ns = ! empty($api) ? config('laracrud.controller.apiNamespace') : config('laracrud.controller.namespace');
         $this->namespace = trim($this->getFullNS($ns), '/') . $this->subNameSpace;
         $this->controllerRepository = $controllerRepository;
+    }
+
+    public function makeModelBuilders()
+    {
+        $builder = null;
+        $columns = $this->table->columns();
+
+        foreach ($columns as $column) {
+            if (empty($builder)) {
+                $builder = new ModelBuilder($column);
+            } else {
+                $newBuilder = new ModelBuilder($column);
+                $newBuilder->merge($builder);
+                $builder = $newBuilder;
+            }
+        }
+
+        return $builder;
+    }
+
+    protected function fillable()
+    {
+        if (!config('laracrud.model.fillable')) {
+            return '';
+        }
+        $data = array_reverse($this->modelBuilder->fillableInline());
+        // $data []= array_reverse($this->modelBuilder->dates);
+        return "'".implode("','", $data)."'";
+    }
+
+    protected function relations()
+    {
+        $relations = $this->table->relations();
+        $methodNames = [];
+        foreach ($relations as $relation) {
+            $methodNames []= $relation['methodName'];
+        }
+        return "'".implode("','", array_reverse($methodNames))."'";
     }
 
     /**
@@ -99,11 +144,15 @@ class Controller implements Crud
      */
     public function template(): string
     {
+        $relations = $this->relations();
         $modelShortName = (new \ReflectionClass($this->model))->getShortName();
         $this->controllerRepository->build();
         $tempMan = new TemplateManager('controller/template.txt', [
             'namespace' => $this->namespace,
             'fullmodelName' => get_class($this->model),
+            'modelName' => $this->modelName2,
+            'relations' => $relations,
+            'fillables' => $this->fillable(),
             'controllerName' => $this->fileName,
             'methods' => implode("\n", $this->controllerRepository->getCode()),
             'importNameSpace' => $this->makeNamespaceImportString(),
