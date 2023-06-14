@@ -7,6 +7,7 @@ use LaraCrud\Contracts\Crud;
 use LaraCrud\Helpers\Helper;
 use LaraCrud\Helpers\TemplateManager;
 use Illuminate\Support\Str;
+
 /**
  * Description of MigrationCrud.
  *
@@ -34,6 +35,7 @@ class MigrationCrud implements Crud
         'text'       => 'text',
         'mediumtext' => 'mediumText',
         'longtext'   => 'longText',
+        'json'   => 'json',
         'int'        => 'integer',
         'tinyint'    => 'tinyInteger',
         'smallint'   => 'smallInteger',
@@ -44,7 +46,7 @@ class MigrationCrud implements Crud
         'decimal'    => 'decimal',
         'enum'       => 'enum',
         'date'       => 'date',
-        'datetime'   => 'dateTime',
+        'datetime'   => 'timestamp',
         'time'       => 'time',
         'timestamp'  => 'timestamp',
     ];
@@ -69,16 +71,18 @@ class MigrationCrud implements Crud
         $retContent = '';
         $rules = $this->rules();
         foreach ($rules as $r) {
-            $retContent .= "\t"."\t"."\t".'$table->'.$r['methodName'];
-            $retContent .= !empty($r['mainParams']) ? '("'.$r['columnName'].'",'.$r['mainParams'].')' : '("'.$r['columnName'].'")';
+            $retContent .= "\t" . "\t" . "\t" . '$table->' . $r['methodName'];
+            $retContent .= !empty($r['mainParams']) ? '("' . $r['columnName'] . '",' . $r['mainParams'] . ')' : '("' . $r['columnName'] . '")';
             if (!empty($r['otherMethods'])) {
                 foreach ($r['otherMethods'] as $om) {
-                    $retContent .= '->'.$om['name'].'('.$om['params'].')';
+                    $retContent .= '->' . $om['name'] . '(' . $om['params'] . ')';
                 }
             }
-            $retContent .= ';'.PHP_EOL;
+            $retContent .= ';' . PHP_EOL;
         }
+
         if (!empty($this->fk)) {
+            $retContent .= PHP_EOL;
             foreach ($this->fk as $column => $rel) {
                 if (!empty($rel['references']) && !empty($rel['on'])) {
                     $fkTemp = new TemplateManager('migration/foreign.txt', [
@@ -86,7 +90,7 @@ class MigrationCrud implements Crud
                         'references' => $rel['references'],
                         'on'         => $rel['on'],
                     ]);
-                    $retContent .= $fkTemp->get().PHP_EOL;
+                    $retContent .= $fkTemp->get();
                 }
             }
         }
@@ -107,7 +111,7 @@ class MigrationCrud implements Crud
      */
     public function save()
     {
-        $fullPath = config('laracrud.migrationPath', 'database/migrations/').$this->generateName($this->table->name()).'.php';
+        $fullPath = config('laracrud.migrationPath', 'database/migrations/') . $this->generateName($this->table->name()) . '.php';
         $migrationFile = new \SplFileObject($fullPath, 'w+');
         $migrationFile->fwrite($this->template());
     }
@@ -132,22 +136,28 @@ class MigrationCrud implements Crud
                     $arr['methodName'] = 'increments';
                 } elseif ('bigint' == $dataType) {
                     $arr['methodName'] = 'bigIncrements';
+                } elseif ('varchar' == $dataType) {
+                    $arr['methodName'] = 'ulid';
                 }
+            } else if ($column->isForeign()) {
+                $arr['methodName'] = 'ulid';
             } else {
                 $arr['methodName'] = isset($this->columnMap[$dataType]) ? $this->columnMap[$dataType] : '';
             }
             //for enum data type we will use in validator.
             if ('enum' == $dataType) {
                 $retVals = implode("', '", $column->options());
-                $params = '[\''.$retVals.'\']';
-            } elseif ('varchar' == $dataType) {
+                $params = '[\'' . $retVals . '\']';
+            } elseif ('varchar' == $dataType && !$column->isForeign() && !$column->isPk()) {
                 $params = $column->length();
             } elseif ('tinyint' == $dataType) {
                 if (1 == $column->length()) {
                     $arr['methodName'] = 'boolean';
                 }
-            } elseif (in_array($dataType, ['smallint', 'int', 'mediumint', 'bigint', 'float',
-                'double', ])) {
+            } elseif (in_array($dataType, [
+                'smallint', 'int', 'mediumint', 'bigint', 'float',
+                'double',
+            ])) {
                 if (!empty($column->length())) {
                     $params = false;
                 }
@@ -165,7 +175,13 @@ class MigrationCrud implements Crud
             if (!empty($defaultValue)) {
                 $otherMethods[] = [
                     'name'   => 'default',
-                    'params' => "'".$defaultValue."'",
+                    'params' => "'" . $defaultValue . "'",
+                ];
+            }
+            if ($column->isPk()) {
+                $otherMethods[] = [
+                    'name'   => 'primary',
+                    'params' => '',
                 ];
             }
             if ($column->isUnique()) {
@@ -175,10 +191,10 @@ class MigrationCrud implements Crud
                 ];
             }
             if ($column->isForeign()) {
-                $otherMethods[] = [
-                    'name'   => 'unsigned',
-                    'params' => '',
-                ];
+                // $otherMethods[] = [
+                //     'name'   => 'unsigned',
+                //     'params' => '',
+                // ];
                 $this->fk[$column->name()] = [
                     'references' => $column->foreignColumn(),
                     'on'         => $column->foreignTable(),
@@ -210,7 +226,7 @@ class MigrationCrud implements Crud
      */
     public function generateName($table)
     {
-        return date('Y_m_d_His').'_create_'.$table.'_table';
+        return date('Y_m_d_His') . '_create_' . $table . '_table';
     }
 
     /**
@@ -224,10 +240,10 @@ class MigrationCrud implements Crud
      */
     public function generateClassName($table)
     {
-        $class = 'create'.Str::camel($table).'Table';
+        $class = 'create' . Str::camel($table) . 'Table';
 
         if (class_exists($class)) {
-            throw new \Exception('Migration for table '.$table.' already exists');
+            throw new \Exception('Migration for table ' . $table . ' already exists');
         }
 
         return $class;
