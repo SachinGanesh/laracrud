@@ -6,5 +6,8 @@
      */
     public function create(User $user)
     {
-        return true;
+        if ($user->isAbleTo('@@permission@@.create')) {
+            return true;
+        }
+        return false;
     }

@@ -3,18 +3,16 @@ namespace @@namespace@@;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 
 @@importNamespaces@@
-/**
-   @@propertyDefiner@@
-   @@methodDefiner@@
- */
+
 class @@modelName@@ extends Model 
 {
     @@traits@@
-
+    use HasUlids;
+    
     @@constants@@
-
     /**
     * Database table name
     */
@@ -23,7 +21,6 @@ class @@modelName@@ extends Model
 @@fillable@@
 @@searchable@@
 @@casts@@
-@@dateColumns@@
 @@relationShips@@
 @@mutators@@
 @@accessors@@

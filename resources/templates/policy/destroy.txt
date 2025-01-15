@@ -7,5 +7,8 @@
      */
     public function delete(User $user, @@modelClass@@  $@@modelClassVar@@)
     {
-        return @@return@@;
+        if ($user->isAbleTo('@@permission@@.delete')) {
+            return true;
+        }
+        return false;
     }

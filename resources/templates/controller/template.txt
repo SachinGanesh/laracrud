@@ -2,18 +2,53 @@
 
 namespace @@namespace@@;
 
-use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
+use Orion\Http\Controllers\Controller;
+use Orion\Http\Requests\Request;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Orion\Concerns\DisableAuthorization;
 use @@fullmodelName@@;
-@@importNameSpace@@
-
-/**
- * Description of @@controllerName@@
- *
- * @author Tuhin Bepari <digitaldreams40@gmail.com>
- */
 
 class @@controllerName@@ extends Controller
 {
-    @@methods@@
+    use DisableAuthorization;
+
+    protected $model = @@modelName@@::class;
+
+    public function includes(): array
+    {
+        return [
+            @@relations@@
+        ];
+    }
+
+    public function searchableBy() : array
+    {
+        return [];
+    }
+
+    public function filterableBy() : array
+    {
+        return ['id', @@fillables@@, 'created_at', 'updated_at', 'deleted_at'];
+    }
+
+    public function sortableBy() : array
+    {
+         return ['id', @@fillables@@, 'created_at', 'updated_at', 'deleted_at'];
+    }
+
+    protected function buildIndexFetchQuery(Request $request, array $requestedRelations): Builder
+    {
+        $query = parent::buildIndexFetchQuery($request, $requestedRelations);
+
+        return $query;
+    }
+
+    protected function beforeSave(Request $request, Model $entity)
+    {
+    }
+
+    protected function afterSave(Request $request, Model $entity)
+    {
+    }
 }

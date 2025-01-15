@@ -4,5 +4,8 @@
      */
     public function viewAny(User $user)
     {
-        return true;
+       if ($user->isAbleTo('@@permission@@.read')) {
+            return true;
+        }
+        return false;
     }

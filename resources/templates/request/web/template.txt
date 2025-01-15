@@ -2,10 +2,10 @@
 
 namespace @@namespace@@;
 
-use Illuminate\Foundation\Http\FormRequest;
+use Orion\Http\Requests\Request;
 use Illuminate\Validation\Rule;
 
-class @@requestClassName@@ extends FormRequest
+class @@requestClassName@@ extends Request
 {
 
     /**
@@ -15,7 +15,7 @@ class @@requestClassName@@ extends FormRequest
      */
     public function authorize()
     {
-        return @@authorization@@;
+        return true;
     }
 
     /**
@@ -23,23 +23,23 @@ class @@requestClassName@@ extends FormRequest
      *
      * @return array
      */
-    public function rules()
+    public function commonRules(): array
     {
         return [
-@@rules@@
+            @@rules@@
         ];
     }
 
-    /**
-    * Get the error messages for the defined validation rules.
-    *
-    * @return array
-    */
-    public function messages()
+    public function storeRules(): array
     {
         return [
-
+           
         ];
     }
 
+    public function updateRules(): array
+    {
+        return [
+        ];
+    }
 }
